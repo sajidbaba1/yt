@@ -96,11 +96,14 @@ function App() {
     times: [new Date(Date.now() + 3600000).toISOString().slice(11, 16)],
     days: [],
     thumbnail: null, // Base64 thumbnail
-    firstComment: ''
+    firstComment: '',
+    tags: [],
+    hashtags: []
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('drive');
   const [showFavs, setShowFavs] = useState(false);
+  const [discordWebhook, setDiscordWebhook] = useState(localStorage.getItem('discordWebhook') || '');
 
   const exchangeStarted = useRef(false);
 
@@ -221,10 +224,21 @@ function App() {
         times: [new Date(Date.now() + 3600000).toISOString().slice(11, 16)],
         days: [new Date().getDay()],
         thumbnail: null,
-        firstComment: ''
+        firstComment: '',
+        tags: suggest.data.tags || [],
+        hashtags: suggest.data.hashtags || []
       });
     } catch (e) {
-      setFormData({ title: file.name, description: '', times: ['12:00'], days: [], thumbnail: null, firstComment: '' });
+      setFormData({
+        title: file.name,
+        description: '',
+        times: ['12:00'],
+        days: [],
+        thumbnail: null,
+        firstComment: '',
+        tags: [],
+        hashtags: []
+      });
     } finally {
       setLoading(false);
     }
@@ -285,6 +299,8 @@ function App() {
             description: formData.description,
             thumbnail: formData.thumbnail,
             firstComment: formData.firstComment,
+            tags: formData.tags,
+            hashtags: formData.hashtags,
             scheduledTime: date
           });
         });
@@ -437,6 +453,58 @@ function App() {
           </section>
         )}
 
+        {activeTab === 'settings' && (
+          <section>
+            <h2 className="section-title"><Settings size={20} /> Advanced Settings</h2>
+            <div className="glass-panel" style={{ padding: '32px', maxWidth: '600px' }}>
+              <div style={{ marginBottom: '24px' }}>
+                <label className="modal-label">Discord Webhook URL</label>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <input
+                    type="password"
+                    className="modal-input"
+                    placeholder="https://discord.com/api/webhooks/..."
+                    value={discordWebhook}
+                    onChange={(e) => setDiscordWebhook(e.target.value)}
+                  />
+                  <button
+                    className="btn-primary"
+                    onClick={() => {
+                      localStorage.setItem('discordWebhook', discordWebhook);
+                      toast.success("Webhook saved locally!");
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '8px' }}>
+                  Receive instant notifications on Discord for every successful upload or failure.
+                </p>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
+                <label className="modal-label">Platform Intelligence Status</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Gemini AI Refiner</div>
+                      <div style={{ fontSize: '12px', color: 'var(--success)' }}>Active: Optimized for Viral CTR</div>
+                    </div>
+                    <CheckCircle2 size={20} color="var(--success)" />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>Smart Metadata Injection</div>
+                      <div style={{ fontSize: '12px', color: 'var(--success)' }}>Enabled: Auto-Tags & Hashtags</div>
+                    </div>
+                    <CheckCircle2 size={20} color="var(--success)" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
           <h2 style={{ marginBottom: '24px', fontSize: '24px' }}>Smart Multi-Schedule</h2>
           {loading && !formData.title ? (
@@ -530,6 +598,30 @@ function App() {
                   value={formData.firstComment}
                   onChange={e => setFormData({ ...formData, firstComment: e.target.value })}
                 />
+              </div>
+
+              <div>
+                <label className="modal-label">Viral Tags (AI Generated)</label>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                  {formData.tags.map((tag, i) => (
+                    <span key={i} style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '11px', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                      {tag}
+                    </span>
+                  ))}
+                  {formData.tags.length === 0 && <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Tags will appear here...</span>}
+                </div>
+              </div>
+
+              <div>
+                <label className="modal-label">Trending Hashtags</label>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  {formData.hashtags.map((ht, i) => (
+                    <span key={i} style={{ color: 'var(--primary)', fontSize: '12px', fontWeight: 600 }}>
+                      {ht}
+                    </span>
+                  ))}
+                  {formData.hashtags.length === 0 && <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Hashtags will appear here...</span>}
+                </div>
               </div>
 
               <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.05)', border: '1px dashed var(--primary)' }}>

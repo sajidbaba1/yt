@@ -33,6 +33,8 @@ const Video = sequelize.define('Video', {
     driveFileId: { type: DataTypes.STRING, allowNull: false },
     title: { type: DataTypes.STRING },
     description: { type: DataTypes.TEXT },
+    tags: { type: DataTypes.TEXT }, // JSON string of tags
+    hashtags: { type: DataTypes.TEXT }, // JSON string of hashtags
     thumbnail: { type: DataTypes.TEXT }, // Custom thumbnail URL or base64
     firstComment: { type: DataTypes.TEXT }, // The comment to post and pin
     scheduledTime: { type: DataTypes.DATE, allowNull: false },
@@ -88,26 +90,78 @@ async function saveTokens(tokens) {
     await Setting.upsert({ key: 'google_tokens', value: JSON.stringify(tokens) });
 }
 
-async function generateMetadata(filename) {
+async function sendDiscordNotification(status, videoTitle, details = '') {
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    if (!webhookUrl) return;
+
+    const embeds = [{
+        title: status === 'Success' ? '🚀 Video Uploaded!' : '❌ Upload Failed',
+        color: status === 'Success' ? 2263842 : 15749300,
+        fields: [
+            { name: 'Video', value: videoTitle, inline: true },
+            { name: 'Details', value: details || 'No extra details', inline: false }
+        ],
+        timestamp: new Date().toISOString()
+    }];
+
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-        const prompt = `Create a catchy YouTube title and a brief SEO-optimized description for a video named: "${filename}". Return only valid JSON: { "title": "...", "description": "..." }`;
-        const result = await model.generateContent(prompt);
-        const text = result.response.text().replace(/```json|```/g, '').trim();
-        return JSON.parse(text);
-    } catch (error) {
-        console.error('Gemini error:', error);
-        return { title: filename, description: "Uploaded via V-UPLOAD AI" };
+        await axios.post(webhookUrl, { embeds });
+    } catch (e) {
+        console.error('Discord webhook error:', e.message);
     }
 }
 
-async function processUpload(fileId, title, description, thumbnailData, firstComment) {
+async function generateMetadata(filename) {
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const prompt = `Act as a viral YouTube growth expert. Analyze the filename: "${filename}". 
+        Create:
+        1. A high-CTR catchy title.
+        2. A brief SEO-optimized description with a call to action.
+        3. A list of 15 viral tags (comma-separated list).
+        4. A list of 5 trending hashtags.
+        Return ONLY valid JSON: 
+        { 
+          "title": "...", 
+          "description": "...", 
+          "tags": ["tag1", "tag2"], 
+          "hashtags": ["#h1", "#h2"] 
+        }`;
+
+        const result = await model.generateContent(prompt);
+        const text = result.response.text().replace(/```json|```/g, '').trim();
+        const data = JSON.parse(text);
+        return data;
+    } catch (error) {
+        console.error('Gemini error:', error);
+        return {
+            title: filename,
+            description: "Uploaded via V-UPLOAD AI",
+            tags: ["automation", "uploader"],
+            hashtags: ["#VUpload", "#Automation"]
+        };
+    }
+}
+
+async function processUpload(fileId, title, description, thumbnailData, firstComment, tagsStr, hashtagsStr) {
     const tokens = await getStoredTokens();
     if (!tokens) throw new Error('No tokens found. Please connect Google account.');
     oauth2Client.setCredentials(tokens);
 
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+
+    let finalDescription = description || 'Uploaded via V-UPLOAD AI';
+    let tags = [];
+    try {
+        if (tagsStr) tags = JSON.parse(tagsStr);
+        if (hashtagsStr) {
+            const hs = JSON.parse(hashtagsStr);
+            finalDescription += '\n\n' + hs.join(' ');
+        }
+    } catch (e) {
+        console.log("Tag parsing error, using defaults");
+    }
 
     console.log(`[Drive] Starting download for fileId: ${fileId}`);
     const driveRes = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
@@ -118,7 +172,8 @@ async function processUpload(fileId, title, description, thumbnailData, firstCom
         requestBody: {
             snippet: {
                 title: (title || 'Untitled Video').substring(0, 100),
-                description: description || 'Uploaded via V-UPLOAD AI',
+                description: finalDescription,
+                tags: tags.slice(0, 50), // YT limit is usually 500 chars total, but 50 items
                 categoryId: '22'
             },
             status: { privacyStatus: 'private' },
@@ -244,8 +299,13 @@ app.get('/api/schedule', async (req, res) => {
 
 app.post('/api/schedule', async (req, res) => {
     try {
-        const { driveFileId, title, description, thumbnail, firstComment, scheduledTime } = req.body;
-        const video = await Video.create({ driveFileId, title, description, thumbnail, firstComment, scheduledTime });
+        const { driveFileId, title, description, thumbnail, firstComment, tags, hashtags, scheduledTime } = req.body;
+        const video = await Video.create({
+            driveFileId, title, description, thumbnail, firstComment,
+            tags: JSON.stringify(tags || []),
+            hashtags: JSON.stringify(hashtags || []),
+            scheduledTime
+        });
         res.json(video);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -254,8 +314,13 @@ app.post('/api/schedule', async (req, res) => {
 
 app.post('/api/schedule/bulk', async (req, res) => {
     try {
-        const { schedules } = req.body; // Array entries with firstComment
-        const videos = await Video.bulkCreate(schedules);
+        const { schedules } = req.body;
+        const formattedSchedules = schedules.map(s => ({
+            ...s,
+            tags: JSON.stringify(s.tags || []),
+            hashtags: JSON.stringify(s.hashtags || [])
+        }));
+        const videos = await Video.bulkCreate(formattedSchedules);
         res.json(videos);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -326,15 +391,19 @@ setInterval(async () => {
                     nextJob.title,
                     nextJob.description,
                     nextJob.thumbnail,
-                    nextJob.firstComment
+                    nextJob.firstComment,
+                    nextJob.tags,
+                    nextJob.hashtags
                 );
                 nextJob.status = 'Done';
                 nextJob.youtubeId = ytId;
                 nextJob.error = null;
+                await sendDiscordNotification('Success', nextJob.title, `Live at: https://youtu.be/${ytId}`);
             } catch (e) {
                 console.error('[Job Manager] Upload Error:', e);
                 nextJob.status = 'Failed';
                 nextJob.error = e.message;
+                await sendDiscordNotification('Failed', nextJob.title, e.message);
             }
             await nextJob.save();
         }

@@ -65,20 +65,31 @@ body {
   padding: 12px 16px;
   border-radius: 12px;
   color: var(--text-muted);
+  color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.3s ease;
+  border-radius: 12px;
+  transition: all 0.2s;
+  font-weight: 500;
   text-decoration: none;
 }
 
 .nav-item:hover,
 .nav-item.active {
-  background: rgba(139, 92, 246, 0.1);
-  color: var(--text-main);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-item.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 15px var(--primary-glow);
 }
 
 .main-content {
-  margin-left: 320px;
-  padding: 40px 60px 40px 20px;
+  flex: 1;
+  padding: 40px;
+  margin-left: 280px;
+  max-width: 1400px;
 }
 
 .header {
@@ -98,33 +109,35 @@ body {
 
 .stat-value {
   font-size: 32px;
-  font-weight: 700;
+  font-weight: 800;
+  margin-top: 12px;
+  letter-spacing: -0.5px;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: var(--primary);
   color: white;
   border: none;
   padding: 12px 24px;
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px var(--primary-glow);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+  filter: brightness(1.1);
 }
 
 .video-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 24px;
-  margin-top: 32px;
 }
 
 .video-card {
@@ -142,10 +155,15 @@ body {
   aspect-ratio: 16/9;
   background: #1e293b;
   object-fit: cover;
+  transition: transform 0.5s;
+}
+
+.video-card:hover .video-thumb {
+  transform: scale(1.05);
 }
 
 .video-info {
-  padding: 16px;
+  padding: 20px;
 }
 
 .video-title {
@@ -157,64 +175,69 @@ body {
 }
 
 .status-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
   font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .status-pending {
-  background: rgba(234, 179, 8, 0.1);
-  color: #eab308;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
 }
 
 .status-done {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
 }
 
 .section-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .modal-label {
   display: block;
-  margin-bottom: 8px;
-  color: var(--text-muted);
   font-size: 13px;
-  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .modal-input {
   width: 100%;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
   border-radius: 12px;
-  color: white;
-  font-size: 15px;
-  transition: all 0.3s ease;
+  padding: 12px 16px;
+  color: var(--text);
+  outline: none;
+  transition: all 0.2s;
 }
 
 .modal-input:focus {
-  outline: none;
   border-color: var(--primary);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .day-chip {
   padding: 8px 16px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
+  background: transparent;
   color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
+  font-weight: 500;
+  font-size: 14px;
 }
 
 .day-chip:hover {
@@ -223,24 +246,23 @@ body {
 
 .day-chip.active {
   background: var(--primary);
-  border-color: var(--primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px var(--primary-glow);
 }
 
 .btn-secondary {
   background: rgba(255, 255, 255, 0.05);
-  color: var(--text-main);
+  color: var(--text);
   border: 1px solid var(--border);
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 12px;
   cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.2s ease;
 }
 
 .btn-secondary:hover {
