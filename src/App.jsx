@@ -88,6 +88,10 @@ function App() {
   const API_BASE = import.meta.env.VITE_API_URL ||
     (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
 
+  if (!API_BASE && window.location.hostname !== 'localhost') {
+    console.warn("⚠️ V-UPLOAD UI: No Backend URL found! Please set VITE_API_URL in Vercel settings.");
+  }
+
   const [driveFiles, setDriveFiles] = useState([]);
   const [scheduledVideos, setScheduledVideos] = useState([]);
   const [favorites, setFavorites] = useState([]);
