@@ -83,6 +83,8 @@ const Modal = ({ isOpen, onClose, children }) => {
 
 function App() {
   const [isAuth, setIsAuth] = useState(false);
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   const [driveFiles, setDriveFiles] = useState([]);
   const [scheduledVideos, setScheduledVideos] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -141,7 +143,7 @@ function App() {
   const handleCodeExchange = async (code) => {
     try {
       setLoading(true);
-      await axios.post('http://localhost:5000/api/auth/exchange', { code });
+      await axios.post(`${API_BASE}/api/auth/exchange`, { code });
       setIsAuth(true);
       window.history.replaceState({}, document.title, "/");
       toast.success("Authentication successful!");
@@ -158,7 +160,7 @@ function App() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://localhost:5000/api/drive/videos');
+      const res = await axios.get(`${API_BASE}/api/drive/videos`);
       setDriveFiles(res.data);
     } catch (err) {
       if (err.response?.status !== 401) toast.error("Drive error");
@@ -169,14 +171,14 @@ function App() {
 
   const fetchSchedule = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/schedule');
+      const res = await axios.get(`${API_BASE}/api/schedule`);
       setScheduledVideos(res.data);
     } catch (err) { }
   };
 
   const fetchFavorites = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/favorites');
+      const res = await axios.get(`${API_BASE}/api/favorites`);
       setFavorites(res.data);
     } catch (err) { }
   };
@@ -186,10 +188,10 @@ function App() {
     const isFav = favorites.find(f => f.driveFileId === file.id);
     try {
       if (isFav) {
-        await axios.delete(`http://localhost:5000/api/favorites/${file.id}`);
+        await axios.delete(`${API_BASE}/api/favorites/${file.id}`);
         toast.info("Removed from favorites");
       } else {
-        await axios.post('http://localhost:5000/api/favorites', {
+        await axios.post(`${API_BASE}/api/favorites`, {
           driveFileId: file.id,
           name: file.name,
           thumbnailLink: file.thumbnailLink
@@ -203,7 +205,7 @@ function App() {
   };
 
   const handleConnect = async () => {
-    const response = await axios.get('http://localhost:5000/api/auth/url');
+    const response = await axios.get(`${API_BASE}/api/auth/url`);
     window.location.href = response.data.url;
   };
 
@@ -212,7 +214,7 @@ function App() {
     setIsModalOpen(true);
     setLoading(true);
     try {
-      const suggest = await axios.get(`http://localhost:5000/api/metadata/suggest?filename=${encodeURIComponent(file.name)}`);
+      const suggest = await axios.get(`${API_BASE}/api/metadata/suggest?filename=${encodeURIComponent(file.name)}`);
       setFormData({
         title: suggest.data.title,
         description: suggest.data.description,
@@ -288,7 +290,7 @@ function App() {
         });
       });
 
-      await axios.post('http://localhost:5000/api/schedule/bulk', { schedules });
+      await axios.post(`${API_BASE}/api/schedule/bulk`, { schedules });
       setIsModalOpen(false);
       fetchSchedule();
       toast.success(`Successfully scheduled ${schedules.length} uploads!`);
@@ -301,7 +303,7 @@ function App() {
 
   const deleteJob = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/schedule/${id}`);
+      await axios.delete(`${API_BASE}/api/schedule/${id}`);
       fetchSchedule();
       toast.info("Job cancelled");
     } catch (e) {
