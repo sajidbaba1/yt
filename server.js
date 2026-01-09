@@ -15,7 +15,8 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const PORT = process.env.PORT || 5000;
 
@@ -171,18 +172,9 @@ async function processUpload(fileId, title, description, thumbnailData, firstCom
                 }
             });
 
-            const commentId = commentRes.data.snippet.topLevelComment.id;
-            console.log(`[YouTube] Comment posted! ID: ${commentId}. Pinning...`);
-
-            await youtube.comments.setManagementStatus({
-                id: commentId,
-                moderationStatus: 'published',
-                banStatus: 'none',
-                pin: true
-            });
-            console.log(`[YouTube] Comment successfully pinned!`);
+            console.log(`[YouTube] Comment successfully posted!`);
         } catch (commentError) {
-            console.error('[YouTube] Comment/Pin Error:', commentError.message);
+            console.error('[YouTube] Comment Error:', commentError.message);
         }
     }
 
@@ -193,7 +185,11 @@ async function processUpload(fileId, title, description, thumbnailData, firstCom
 app.get('/api/auth/url', (req, res) => {
     const url = oauth2Client.generateAuthUrl({
         access_type: 'offline',
-        scope: ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/youtube.upload'],
+        scope: [
+            'https://www.googleapis.com/auth/drive.readonly',
+            'https://www.googleapis.com/auth/youtube.upload',
+            'https://www.googleapis.com/auth/youtube.force-ssl'
+        ],
         prompt: 'consent'
     });
     res.json({ url });
