@@ -414,4 +414,9 @@ setInterval(async () => {
 
 
 
+// Health Check for UptimeRobot (Keeps Render instance awake)
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'V-UPLOAD AI Backend is running', timestamp: new Date() });
+});
+
 app.listen(PORT, () => console.log(`Server running Port ${PORT}`));
