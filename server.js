@@ -414,8 +414,8 @@ setInterval(async () => {
 
 
 
-// Health Check for UptimeRobot (Keeps Render instance awake)
-app.get('/health', (req, res) => {
+// Health Check for UptimeRobot (Handles GET, HEAD, etc.)
+app.all('/health', (req, res) => {
     res.status(200).json({ status: 'V-UPLOAD AI Backend is running', timestamp: new Date() });
 });
 
