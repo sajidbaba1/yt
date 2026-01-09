@@ -83,7 +83,10 @@ const Modal = ({ isOpen, onClose, children }) => {
 
 function App() {
   const [isAuth, setIsAuth] = useState(false);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  // Intelligence: Auto-switch between Live Backend and Localhost
+  const API_BASE = import.meta.env.VITE_API_URL ||
+    (window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
 
   const [driveFiles, setDriveFiles] = useState([]);
   const [scheduledVideos, setScheduledVideos] = useState([]);
